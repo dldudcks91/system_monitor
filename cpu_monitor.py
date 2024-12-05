@@ -145,6 +145,7 @@ class CPUMonitor:
                     '''
                     저장하는 곳 설정
                     '''
+                    print(count, report_interval)
                     self.date_str = datetime.now().strftime('%Y%m%d')
                     # 로그 파일 설정
                     log_file = os.path.join(self.log_dir, f"cpu_usage_{self.date_str}.log")
