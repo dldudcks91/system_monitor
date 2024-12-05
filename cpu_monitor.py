@@ -171,8 +171,13 @@ class CPUMonitor:
                         
                     avg_cpu_usage = cpu_usage_sum / count
                     
+                    
+                    proc_process = psutil.process_iter(['pid', 'name', 'cpu_percent'])
+                    proc_list = list()
                     # CPU 평균 사용량 로깅
-                    self.logger.info(f"process_usage: {list(psutil.process_iter(['pid', 'name', 'cpu_percent']))}")
+                    # for proc in :
+                    #     proc_list.append(proc.cpu_percent()
+                    self.logger.info(f"process_usage: {proc_process.info}")
                     self.logger.info(f"\n{'='*50}")
                     self.logger.info(f"Last {report_interval} seconds summary:")
                     self.logger.info(f"Average CPU Usage: {avg_cpu_usage:.1f}%")
