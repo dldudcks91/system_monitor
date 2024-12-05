@@ -145,24 +145,29 @@ class CPUMonitor:
                     '''
                     저장하는 곳 설정
                     '''
-                    print(count, report_interval)
-                    self.date_str = datetime.now().strftime('%Y%m%d')
-                    # 로그 파일 설정
-                    log_file = os.path.join(self.log_dir, f"cpu_usage_{self.date_str}.log")
                     
-                    # CSV 파일 설정
-                    self.csv_file = os.path.join(self.log_dir, f"cpu_usage_{self.date_str}.csv")
-                    
-                    # 파일 핸들러 설정
-                    file_handler = logging.FileHandler(log_file)
-                    file_handler.setLevel(logging.INFO)
-                    # 포맷터 설정
-                    formatter = logging.Formatter('%(asctime)s - %(message)s')
-                    file_handler.setFormatter(formatter)
-                    
-                    # 핸들러 추가
-                    self.logger.addHandler(file_handler)
-                    
+                    current_date_str = datetime.now().strftime('%Y%m%d')
+                    if self.date_str != current_date_str:
+                        self.date_str = current_date_str
+                        
+                        # 로그 파일 설정
+                        log_file = os.path.join(self.log_dir, f"cpu_usage_{self.date_str}.log")
+                        
+                        # CSV 파일 설정
+                        self.csv_file = os.path.join(self.log_dir, f"cpu_usage_{self.date_str}.csv")
+                        
+                        # 파일 핸들러 설정
+                        file_handler = logging.FileHandler(log_file)
+                        file_handler.setLevel(logging.INFO)
+                        # 포맷터 설정
+                        formatter = logging.Formatter('%(asctime)s - %(message)s')
+                        file_handler.setFormatter(formatter)
+                        
+                        # 핸들러 추가
+                        for handler in self.logger.handlers[:]:
+                                self.logger.removeHandler(handler)
+                        self.logger.addHandler(file_handler)
+                        
                     avg_cpu_usage = cpu_usage_sum / count
                     
                     # CPU 평균 사용량 로깅
