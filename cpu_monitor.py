@@ -54,10 +54,10 @@ class CPUMonitor:
                                'Load_Avg_5min', 'Load_Avg_15min', 
                                'Frequency_Current(MHz)', 'Temperature(°C)'])
 
-    def get_cpu_info(self):
+    def get_cpu_info(self, interval):
         """CPU 정보 수집"""
         # CPU 사용률 (1초 간격으로 측정)
-        cpu_percent = psutil.cpu_percent(interval=1)
+        cpu_percent = psutil.cpu_percent(interval=interval)
         
         # 시스템 로드 평균
         load_avg = psutil.getloadavg()
@@ -109,45 +109,97 @@ class CPUMonitor:
                 cpu_info['temperature']
             ])
 
-    def monitor(self, interval=60):
-        """주기적으로 CPU 모니터링 실행"""
+    def monitor(self, sample_interval=1, report_interval=60):
+        """
+        sample_interval: 샘플링 간격 (초)
+        report_interval: 보고 간격 (초)
+        """
         self.logger.info("Starting CPU monitoring...")
         self.logger.info(f"System has {self.cpu_count} physical cores and {self.cpu_count_logical} logical cores")
-        self.date_str = datetime.now().strftime('%Y%m%d')
+        
         try:
+            count = 0
+            cpu_usage_sum = 0
+            process_usage = {}  # 프로세스별 CPU 사용량 누적
+            
             while True:
                 # CPU 정보 수집
-                cpu_info = self.get_cpu_info()
+                cpu_info = self.get_cpu_info(sample_interval)
+                cpu_usage_sum += cpu_info['cpu_percent']
                 
-                # CSV 파일에 CPU 정보 저장
-                self.log_to_csv(cpu_info)
-                
-                # 로그 파일에 CPU 상태 정보 저장
-                self.logger.info("System CPU Status:")
-                self.logger.info(
-                    f"CPU Usage: {cpu_info['cpu_percent']}%, "
-                    f"Load Average: {cpu_info['load_avg']}, "
-                    f"Current Frequency: {cpu_info['frequency']:.0f}MHz"
-                )
-                if cpu_info['temperature']:
-                    self.logger.info(f"CPU Temperature: {cpu_info['temperature']}°C")
-                
-                # 상위 프로세스 로깅
+                # 프로세스 정보 수집 및 누적
                 top_processes = self.get_top_processes()
-                self.logger.info("Top 5 CPU-Consuming Processes:")
                 for proc in top_processes:
-                    self.logger.info(
-                        f"Process: {proc['name']}, PID: {proc['pid']}, "
-                        f"CPU Usage: {proc['cpu_percent']:.1f}%"
-                    )
+                    name = proc['name']
+                    if name not in process_usage:
+                        process_usage[name] = {'total': 0, 'count': 0}
+                    process_usage[name]['total'] += proc['cpu_percent']
+                    process_usage[name]['count'] += 1
                 
-                # 경고 조건 확인
-                if cpu_info['cpu_percent'] > 90:
-                    self.logger.warning(f"High CPU usage alert! {cpu_info['cpu_percent']}% used")
-                if cpu_info['temperature'] and cpu_info['temperature'] > 80:
-                    self.logger.warning(f"High CPU temperature alert! {cpu_info['temperature']}°C")
+                count += 1
                 
-                time.sleep(interval)
+                # 60초가 되면 평균 계산 및 로깅
+                if count >= report_interval:
+                    
+                    '''
+                    저장하는 곳 설정
+                    '''
+                    self.date_str = datetime.now().strftime('%Y%m%d')
+                    # 로그 파일 설정
+                    log_file = os.path.join(self.log_dir, f"cpu_usage_{self.date_str}.log")
+                    
+                    # CSV 파일 설정
+                    self.csv_file = os.path.join(self.log_dir, f"cpu_usage_{self.date_str}.csv")
+                    
+                    # 파일 핸들러 설정
+                    self.file_handler = logging.FileHandler(log_file)
+                    self.file_handler.setLevel(logging.INFO)
+                    # 포맷터 설정
+                    self.file_handler.setFormatter(self.formatter)
+                    # 핸들러 추가
+                    self.logger.addHandler(self.file_handler)
+                    
+                    avg_cpu_usage = cpu_usage_sum / count
+                    
+                    # CPU 평균 사용량 로깅
+                    self.logger.info(f"\n{'='*50}")
+                    self.logger.info(f"Last {report_interval} seconds summary:")
+                    self.logger.info(f"Average CPU Usage: {avg_cpu_usage:.1f}%")
+                    self.logger.info(f"Load Average: {cpu_info['load_avg']}")
+                    
+                    # 프로세스별 평균 사용량 계산 및 로깅
+                    self.logger.info("\nTop CPU-Consuming Processes (Average):")
+                    process_averages = {
+                        name: usage['total'] / usage['count']
+                        for name, usage in process_usage.items()
+                    }
+                    
+                    # 상위 5개 프로세스 출력
+                    top_5_processes = sorted(
+                        process_averages.items(), 
+                        key=lambda x: x[1], 
+                        reverse=True
+                    )[:5]
+                    
+                    for proc_name, avg_usage in top_5_processes:
+                        self.logger.info(f"Process: {proc_name}, Average CPU Usage: {avg_usage:.1f}%")
+                    
+                    self.logger.info(f"{'='*50}\n")
+                    
+                    # CSV 파일에 기록
+                    self.log_to_csv({
+                        'cpu_percent': avg_cpu_usage,
+                        'load_avg': cpu_info['load_avg'],
+                        'frequency': cpu_info['frequency'],
+                        'temperature': cpu_info['temperature']
+                    })
+                    
+                    # 카운터와 누적값 초기화
+                    count = 0
+                    cpu_usage_sum = 0
+                    process_usage.clear()
+                
+                
                 
         except KeyboardInterrupt:
             self.logger.info("Stopping CPU monitoring...")

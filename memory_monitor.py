@@ -12,6 +12,7 @@ class MemoryMonitor:
         # 로그 파일 설정
         log_file = os.path.join(log_dir, f"memory_usage_{datetime.now().strftime('%Y%m%d')}.log")
         
+        
         # 로깅 설정
         self.logger = logging.getLogger('MemoryMonitor')
         self.logger.setLevel(logging.INFO)
@@ -117,7 +118,11 @@ def main():
     try:
         monitor.logger.info("Starting extended memory monitoring...")
         while True:
+            log_file = os.path.join(monitor.log_dir, f"memory_usage_{datetime.now().strftime('%Y%m%d')}.log")
+            monitor.file_handler = logging.FileHandler(log_file)
+            monitor.file_handler.setLevel(logging.INFO)
             extended_logging()
+            
             time.sleep(60)  # 60초 간격으로 모니터링
     except KeyboardInterrupt:
         monitor.logger.info("Monitoring stopped by user")
