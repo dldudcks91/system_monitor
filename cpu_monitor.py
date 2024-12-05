@@ -190,6 +190,8 @@ class CPUMonitor:
                         reverse=True
                     )[:5]
                     
+                    self.logger.info(top_5_processes)
+                    
                     for proc_name, avg_usage in top_5_processes:
                         self.logger.info(f"Process: {proc_name}, Average CPU Usage: {avg_usage:.1f}%")
                     
