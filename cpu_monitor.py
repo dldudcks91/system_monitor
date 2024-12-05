@@ -54,10 +54,10 @@ class CPUMonitor:
                                'Load_Avg_5min', 'Load_Avg_15min', 
                                'Frequency_Current(MHz)', 'Temperature(°C)'])
 
-    def get_cpu_info(self, interval):
+    def get_cpu_info(self):
         """CPU 정보 수집"""
         # CPU 사용률 (1초 간격으로 측정)
-        cpu_percent = psutil.cpu_percent(interval=interval)
+        cpu_percent = psutil.cpu_percent()
         
         # 시스템 로드 평균
         load_avg = psutil.getloadavg()
@@ -124,7 +124,7 @@ class CPUMonitor:
             
             while True:
                 # CPU 정보 수집
-                cpu_info = self.get_cpu_info(sample_interval)
+                cpu_info = self.get_cpu_info()
                 cpu_usage_sum += cpu_info['cpu_percent']
                 
                 # 프로세스 정보 수집 및 누적
@@ -199,7 +199,7 @@ class CPUMonitor:
                     cpu_usage_sum = 0
                     process_usage.clear()
                 
-                
+                time.sleep(sample_interval)
                 
         except KeyboardInterrupt:
             self.logger.info("Stopping CPU monitoring...")
