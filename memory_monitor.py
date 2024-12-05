@@ -5,12 +5,13 @@ from datetime import datetime
 import os
 
 class MemoryMonitor:
-    def __init__(self, log_dir="/var/log/memory_monitor"):
+    def __init__(self):
         # 로그 디렉토리 생성
-        os.makedirs(log_dir, exist_ok=True)
+        self.log_dir ="/var/log/memory_monitor"
+        os.makedirs(self.log_dir, exist_ok=True)
         
         # 로그 파일 설정
-        log_file = os.path.join(log_dir, f"memory_usage_{datetime.now().strftime('%Y%m%d')}.log")
+        log_file = os.path.join(self.log_dir, f"memory_usage_{datetime.now().strftime('%Y%m%d')}.log")
         
         
         # 로깅 설정
@@ -18,20 +19,20 @@ class MemoryMonitor:
         self.logger.setLevel(logging.INFO)
         
         # 파일 핸들러 설정
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(logging.INFO)
+        self.file_handler = logging.FileHandler(log_file)
+        self.file_handler.setLevel(logging.INFO)
         
         # 포맷터 설정
-        formatter = logging.Formatter('%(asctime)s - Memory Usage: %(message)s')
-        file_handler.setFormatter(formatter)
+        self.formatter = logging.Formatter('%(asctime)s - Memory Usage: %(message)s')
+        self.file_handler.setFormatter(self.formatter)
         
         # 핸들러 추가
-        self.logger.addHandler(file_handler)
+        self.logger.addHandler(self.file_handler)
         
         # 콘솔 출력 핸들러
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.INFO)
-        console_handler.setFormatter(formatter)
+        console_handler.setFormatter(self.formatter)
         self.logger.addHandler(console_handler)
 
     def get_memory_info(self):

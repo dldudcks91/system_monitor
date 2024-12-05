@@ -8,18 +8,19 @@ from datetime import datetime
 import os
 
 class CPUMonitor:
-    def __init__(self, log_dir="/var/log/cpu_monitor"):
+    def __init__(self):
         # 디렉토리 생성
-        os.makedirs(log_dir, exist_ok=True)
+        self.log_dir="/var/log/cpu_monitor"
+        os.makedirs(self.log_dir, exist_ok=True)
         
         # 날짜 문자열
         self.date_str = datetime.now().strftime('%Y%m%d')
         
         # 로그 파일 설정
-        log_file = os.path.join(log_dir, f"cpu_usage_{self.date_str}.log")
+        log_file = os.path.join(self.log_dir, f"cpu_usage_{self.date_str}.log")
         
         # CSV 파일 설정
-        self.csv_file = os.path.join(log_dir, f"cpu_usage_{self.date_str}.csv")
+        self.csv_file = os.path.join(self.log_dir, f"cpu_usage_{self.date_str}.csv")
         
         # 로깅 설정
         self.logger = logging.getLogger('CPUMonitor')
@@ -152,12 +153,14 @@ class CPUMonitor:
                     self.csv_file = os.path.join(self.log_dir, f"cpu_usage_{self.date_str}.csv")
                     
                     # 파일 핸들러 설정
-                    self.file_handler = logging.FileHandler(log_file)
-                    self.file_handler.setLevel(logging.INFO)
+                    file_handler = logging.FileHandler(log_file)
+                    file_handler.setLevel(logging.INFO)
                     # 포맷터 설정
-                    self.file_handler.setFormatter(self.formatter)
+                    formatter = logging.Formatter('%(asctime)s - %(message)s')
+                    file_handler.setFormatter(formatter)
+                    
                     # 핸들러 추가
-                    self.logger.addHandler(self.file_handler)
+                    self.logger.addHandler(file_handler)
                     
                     avg_cpu_usage = cpu_usage_sum / count
                     
