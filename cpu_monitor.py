@@ -84,13 +84,19 @@ class CPUMonitor:
         }
 
     def get_top_processes(self, limit=5):
-        """CPU 사용량 상위 프로세스 조회"""
+        # 첫번째 측정
+        for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
+            proc.cpu_percent()
+            
+        time.sleep(0.1)  # 잠시 대기
+        
+        # 실제 측정
         processes = []
         for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
             try:
                 proc_info = proc.info
                 proc_info['cpu_percent'] = proc.cpu_percent()
-                if proc_info['cpu_percent'] > 0.1:  # 0.1% 이상 사용하는 프로세스만
+                if proc_info['cpu_percent'] > 0.1:
                     processes.append(proc_info)
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
