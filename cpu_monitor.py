@@ -126,6 +126,7 @@ class CPUMonitor:
             while True:
                 # CPU 정보 수집
                 cpu_info = self.get_cpu_info()
+                
                 cpu_usage_sum += cpu_info['cpu_percent']
                 
                 # 프로세스 정보 수집 및 누적
@@ -171,6 +172,7 @@ class CPUMonitor:
                     avg_cpu_usage = cpu_usage_sum / count
                     
                     # CPU 평균 사용량 로깅
+                    self.logger.info(f"process_usage: {process_usage}")
                     self.logger.info(f"\n{'='*50}")
                     self.logger.info(f"Last {report_interval} seconds summary:")
                     self.logger.info(f"Average CPU Usage: {avg_cpu_usage:.1f}%")
@@ -190,7 +192,7 @@ class CPUMonitor:
                         reverse=True
                     )[:5]
                     
-                    self.logger.info(top_5_processes)
+                    
                     
                     for proc_name, avg_usage in top_5_processes:
                         self.logger.info(f"Process: {proc_name}, Average CPU Usage: {avg_usage:.1f}%")
