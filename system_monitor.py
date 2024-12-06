@@ -79,7 +79,7 @@ class SystemMonitor:
                 current_time = datetime.now().timestamp()
                 if current_time - last_save >= 60:
                     date_str = datetime.now().strftime('%Y-%m-%d')
-                    json_file = os.path.join(self.log_dir, f"system_monitor_{date_str}.json") 
+                    json_file = os.path.join(self.log_dir, f"system_monitor_{date_str.replace('-','')}.json") 
                     
                     
                     with open(json_file, 'a') as f:
