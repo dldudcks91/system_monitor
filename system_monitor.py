@@ -84,6 +84,7 @@ class SystemMonitor:
                         f.write(json.dumps(metrics) + '\n')
                     
                     last_save = current_time
+                print(metrics)
                 time.sleep(3)
             except Exception as e:
                 print(f"Error in test_monitor: {e}")
