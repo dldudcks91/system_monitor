@@ -40,7 +40,8 @@ class SystemMonitor:
         metrics = {
              'timestamp': datetime.now().isoformat(),
              'cpu': psutil.cpu_percent(),
-             'memory': psutil.virtual_memory().percent
+             'memory': psutil.virtual_memory().percent,
+             'swap_memory':psutil.swap_memory().percent
              }
         
         metrics['processes'] = self.get_process()
@@ -55,15 +56,15 @@ class SystemMonitor:
                 proc_info = proc.info
                 proc_info['cpu_percent'] = proc.cpu_percent()
                 proc_info['memory_percent'] = round(proc.memory_percent(),3)
-                if (proc_info['cpu_percent'] > 0.1) or (proc_info['memory_percent'] > 1.0):
+                if (proc_info['cpu_percent'] > 1.0) or (proc_info['memory_percent'] > 1.0):
                     processes.append(proc_info)
                     
                 
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
         
-        # CPU 사용률 기준으로 정렬하고 상위 5개 선택
-        processes = sorted(processes, key=lambda x: x['cpu_percent'], reverse=True)[:limit]
+        # CPU 사용률 기준으로 정렬하고 상위 limit개 선택
+        processes = sorted(processes, key=lambda x: x['cpu_percent'], reverse=True)
         
         
         return processes
@@ -78,12 +79,12 @@ class SystemMonitor:
                 current_time = datetime.now().timestamp()
                 if current_time - last_save >= 60:
                     date_str = datetime.now().strftime('%Y-%m-%d')
-                    json_file = os.path.join(self.log_dir, f"cpu_usage_{date_str}.json") 
+                    json_file = os.path.join(self.log_dir, f"system_monitor_{date_str}.json") 
                     
                     
                     with open(json_file, 'a') as f:
                         for metric in metrics_buffer:
-                            f.write(json.dumps(metrics) + '\n')
+                            f.write(json.dumps(metric) + '\n')
                     
                     
                     metrics_buffer = []
