@@ -4,6 +4,7 @@ import psutil
 import time
 import logging
 import csv
+import json
 from datetime import datetime
 import os
 
@@ -27,15 +28,15 @@ class CPUMonitor:
         self.logger.setLevel(logging.INFO)
         
         # 파일 핸들러 설정
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(logging.INFO)
+        self.file_handler = logging.FileHandler(log_file)
+        self.file_handler.setLevel(logging.INFO)
         
         # 포맷터 설정
         formatter = logging.Formatter('%(asctime)s - %(message)s')
-        file_handler.setFormatter(formatter)
+        self.file_handler.setFormatter(formatter)
         
         # 핸들러 추가
-        self.logger.addHandler(file_handler)
+        self.logger.addHandler(self.file_handler)
         
         # 콘솔 출력 핸들러
         console_handler = logging.StreamHandler()
@@ -52,8 +53,7 @@ class CPUMonitor:
             with open(self.csv_file, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(['Timestamp', 'CPU_Usage(%)', 'Load_Avg_1min', 
-                               'Load_Avg_5min', 'Load_Avg_15min', 
-                               'Frequency_Current(MHz)', 'Temperature(°C)'])
+                               'Load_Avg_5min', 'Load_Avg_15min', ])
 
     def get_cpu_info(self):
         """CPU 정보 수집"""
@@ -62,40 +62,25 @@ class CPUMonitor:
         
         # 시스템 로드 평균
         load_avg = psutil.getloadavg()
-        
-        # CPU 주파수 (현재/최소/최대)
-        freq = psutil.cpu_freq()
-        
-        # CPU 온도 (지원되는 경우)
-        try:
-            temp = psutil.sensors_temperatures()
-            if 'coretemp' in temp:
-                temperature = temp['coretemp'][0].current
-            else:
-                temperature = None
-        except (AttributeError, KeyError):
-            temperature = None
 
         return {
             'cpu_percent': cpu_percent,
             'load_avg': load_avg,
-            'frequency': freq.current if freq else None,
-            'temperature': temperature
+            
         }
 
     def get_top_processes(self, limit=5):
-        # 첫번째 측정
-        for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
-            proc.cpu_percent()
-            
-        time.sleep(0.1)  # 잠시 대기
+        
+        
         
         # 실제 측정
         processes = []
-        for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
+        for proc in psutil.process_iter(['pid', 'name']):
             try:
                 proc_info = proc.info
                 proc_info['cpu_percent'] = proc.cpu_percent()
+                
+                
                 if proc_info['cpu_percent'] > 0.1:
                     processes.append(proc_info)
             except (psutil.NoSuchProcess, psutil.AccessDenied):
@@ -111,12 +96,13 @@ class CPUMonitor:
                 cpu_info['cpu_percent'],
                 cpu_info['load_avg'][0],
                 cpu_info['load_avg'][1],
-                cpu_info['load_avg'][2],
-                cpu_info['frequency'],
-                cpu_info['temperature']
+                cpu_info['load_avg'][2]
+                
             ])
-
-    def monitor(self, sample_interval=1, report_interval=60):
+    
+            
+            
+    def monitor(self, sample_interval=3, report_interval=6):
         """
         sample_interval: 샘플링 간격 (초)
         report_interval: 보고 간격 (초)
@@ -138,21 +124,19 @@ class CPUMonitor:
                 # 프로세스 정보 수집 및 누적
                 top_processes = self.get_top_processes()
                 for proc in top_processes:
-                    name = proc['name']
-                    if name not in process_usage:
-                        process_usage[name] = {'total': 0, 'count': 0}
-                    process_usage[name]['total'] += proc['cpu_percent']
-                    process_usage[name]['count'] += 1
+                    pid = proc['pid']
+                    if pid not in process_usage:
+                        process_usage[pid] = {'total': 0, 'count': 0, 'name': proc['name']}
+                    process_usage[pid]['total'] += proc['cpu_percent']
+                    process_usage[pid]['count'] += 1
                 
                 count += 1
                 
                 # 60초가 되면 평균 계산 및 로깅
                 if count >= report_interval:
                     
-                    '''
-                    저장하는 곳 설정
-                    '''
                     
+                    # 60초에 한번씩 날짜가 변했는지 확인 후 저장
                     current_date_str = datetime.now().strftime('%Y%m%d')
                     if self.date_str != current_date_str:
                         self.date_str = current_date_str
@@ -160,9 +144,7 @@ class CPUMonitor:
                         # 로그 파일 설정
                         log_file = os.path.join(self.log_dir, f"cpu_usage_{self.date_str}.log")
                         
-                        # CSV 파일 설정
-                        self.csv_file = os.path.join(self.log_dir, f"cpu_usage_{self.date_str}.csv")
-                        
+
                         # 파일 핸들러 설정
                         file_handler = logging.FileHandler(log_file)
                         file_handler.setLevel(logging.INFO)
@@ -171,70 +153,32 @@ class CPUMonitor:
                         file_handler.setFormatter(formatter)
                         
                         # 핸들러 추가
-                        for handler in self.logger.handlers[:]:
-                                self.logger.removeHandler(handler)
-                        self.logger.addHandler(file_handler)
+                        self.file_handler.close()
+                        self.file_handler = file_handler
+                        self.logger.addHandler(self.file_handler)
                         
                     avg_cpu_usage = cpu_usage_sum / count
                     
-                    
-                    
-                    
-                    
-                    for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
-                        proc.cpu_percent()
-                        
-                    time.sleep(0.1)  # 잠시 대기
-                    
-                    # 실제 측정
-                    processes = []
-                    for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
-                        try:
-                            proc_info = proc.info
-                            proc_info['cpu_percent'] = proc.cpu_percent()
-                            if proc_info['cpu_percent'] > 0.1:
-                                processes.append(proc_info)
-                        except (psutil.NoSuchProcess, psutil.AccessDenied):
-                            pass
-                    proc_list = sorted(processes, key=lambda x: x['cpu_percent'], reverse=True)
-                
 
-                        
-                        
-                    self.logger.info(f"process_usage: {proc_list}")
                     self.logger.info(f"\n{'='*50}")
                     self.logger.info(f"Last {report_interval} seconds summary:")
                     self.logger.info(f"Average CPU Usage: {avg_cpu_usage:.1f}%")
                     self.logger.info(f"Load Average: {cpu_info['load_avg']}")
                     
+                    
+                    
                     # 프로세스별 평균 사용량 계산 및 로깅
                     self.logger.info("\nTop CPU-Consuming Processes (Average):")
-                    process_averages = {
-                        name: usage['total'] / usage['count']
-                        for name, usage in process_usage.items()
-                    }
+                    process_averages = { pid: (usage['name'], usage['total'] / usage['count']) for pid, usage in process_usage.items()}
                     
                     # 상위 5개 프로세스 출력
-                    top_5_processes = sorted(
-                        process_averages.items(), 
-                        key=lambda x: x[1], 
-                        reverse=True
-                    )[:5]
+                    top_5_processes = sorted( process_averages.items(), key=lambda x: x[1][1],  reverse=True)[:5]
                     
-                    
-                    
-                    for proc_name, avg_usage in top_5_processes:
-                        self.logger.info(f"Process: {proc_name}, Average CPU Usage: {avg_usage:.1f}%")
+                    for pid, avg_usage in top_5_processes:
+                        self.logger.info(f"Process: {pid}, Name: {avg_usage[0]} Average CPU Usage: {avg_usage[1]:.1f}%")
                     
                     self.logger.info(f"{'='*50}\n")
                     
-                    # CSV 파일에 기록
-                    self.log_to_csv({
-                        'cpu_percent': avg_cpu_usage,
-                        'load_avg': cpu_info['load_avg'],
-                        'frequency': cpu_info['frequency'],
-                        'temperature': cpu_info['temperature']
-                    })
                     
                     # 카운터와 누적값 초기화
                     count = 0
@@ -247,7 +191,10 @@ class CPUMonitor:
             self.logger.info("Stopping CPU monitoring...")
         except Exception as e:
             self.logger.error(f"Error occurred: {str(e)}")
-
+    
+    
+        
+        
 def main():
     monitor = CPUMonitor()
     monitor.monitor()
