@@ -71,6 +71,7 @@ class SystemMonitor:
     
     def test_monitor(self):
         last_save = 0
+        metrics_buffer = []
         while True:
             try:
                 metrics = self.get_metrics()
@@ -81,10 +82,17 @@ class SystemMonitor:
                     
                     
                     with open(json_file, 'a') as f:
-                        f.write(json.dumps(metrics) + '\n')
+                        for metric in metrics_buffer:
+                            f.write(json.dumps(metrics) + '\n')
                     
+                    
+                    metrics_buffer = []
                     last_save = current_time
+                    print(f'Save metrics: {current_time}')
+                    
+                    
                 print(metrics)
+                metrics_buffer.append(metrics)
                 time.sleep(3)
             except Exception as e:
                 print(f"Error in test_monitor: {e}")
@@ -92,6 +100,7 @@ class SystemMonitor:
         
     async def monitor_metrics(self):
         last_save = 0
+        
         while True:
             try:
                 metrics = self.get_metrics()
