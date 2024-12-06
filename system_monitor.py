@@ -52,7 +52,7 @@ class SystemMonitor:
                 proc_info['cpu_percent'] = proc.cpu_percent()
                 proc_info['memory_percent'] = proc.memory_percent()
                 if (proc_info['cpu_percent'] > 0.1) or (proc_info['memory_percent'] > 1.0):
-                    processes(proc_info)
+                    processes.append(proc_info)
                     
                 
             except (psutil.NoSuchProcess, psutil.AccessDenied):
