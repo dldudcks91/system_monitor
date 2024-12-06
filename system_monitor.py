@@ -38,21 +38,33 @@ class SystemMonitor:
              'cpu': psutil.cpu_percent(),
              'memory': psutil.virtual_memory().percent
              }
+        
+        metrics['processes'] = self.get_process()
+        return metrics
+    
+    def get_process(self, limit = 5):
+        
         processes = []
          
         for proc in psutil.process_iter(['pid', 'name']):
             try:
                 proc_info = proc.info
                 proc_info['cpu_percent'] = proc.cpu_percent()
-                if proc_info['cpu_percent'] > 0.1:
-                    processes.append(proc_info)
+                proc_info['memory_percent'] = proc.memory_percent()
+                if (proc_info['cpu_percent'] > 0.1) or (proc_info['memory_percent'] > 1.0):
+                    processes(proc_info)
+                    
+                
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
         
         # CPU 사용률 기준으로 정렬하고 상위 5개 선택
-        top_processes = sorted(processes, key=lambda x: x['cpu_percent'], reverse=True)[:5]
-        metrics['processes'] = top_processes
-        return metrics
+        processes = sorted(processes, key=lambda x: x['cpu_percent'], reverse=True)[:limit]
+        
+        
+        return processes
+    
+    
     def test_monitor(self):
         
         while True:
