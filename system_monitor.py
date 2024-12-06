@@ -5,8 +5,10 @@ import logging
 import psutil
 import json
 from datetime import datetime
-import websockets
+
 from logging.handlers import TimedRotatingFileHandler
+#import websockets
+
 
 class SystemMonitor:
     def __init__(self, websocket_port=8765):
