@@ -40,14 +40,11 @@ class SystemMonitor:
              }
         processes = []
          
-        for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
+        for proc in psutil.process_iter(['pid', 'name']):
             try:
-                proc_info = {
-                    'pid': proc.info['pid'],
-                    'name': proc.info['name'],
-                    'cpu_percent': proc.cpu_percent()
-                }
-                if proc_info['cpu_percent'] > 0:
+                proc_info = proc.info
+                proc_info['cpu_percent'] = proc.cpu_percent()
+                if proc_info['cpu_percent'] > 0.1:
                     processes.append(proc_info)
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
