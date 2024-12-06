@@ -47,12 +47,14 @@ class AsyncSystemMonitor:
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
         
-        # CPU 사용률 기준으로 정렬하고 상위 limit개 선택
+        # CPU, memory 사용률 기준으로 정렬하고 상위 limit개 선택 후 합침
+        
         processes_cpu = sorted(processes, key=lambda x: x['cpu_percent'], reverse=True)[:limit]
         processes_memory = sorted(processes, key=lambda x: x['memory_percent'], reverse=True)[:limit]
-        processes_total = {**processes_cpu, **processes_memory}
         
-        
+        processes_dict = {p['pid']: p for p in processes_cpu + processes_memory}
+        processes_total = list(processes_dict.values())
+
         return processes_total
     
     
