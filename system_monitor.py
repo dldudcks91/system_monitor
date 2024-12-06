@@ -4,6 +4,7 @@ import asyncio
 import logging
 import psutil
 import json
+import time
 from datetime import datetime
 
 from logging.handlers import TimedRotatingFileHandler
@@ -60,7 +61,7 @@ class SystemMonitor:
         while True:
             metrics = self.get_metrics()
             print(metrics)
-        
+            time.sleep(3)
         
     async def monitor_metrics(self):
         last_save = 0
