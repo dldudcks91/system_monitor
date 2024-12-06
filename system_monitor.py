@@ -1,5 +1,5 @@
 #%%
-
+import os
 import asyncio
 import logging
 import psutil
@@ -13,6 +13,10 @@ from logging.handlers import TimedRotatingFileHandler
 
 class SystemMonitor:
     def __init__(self, websocket_port=8765):
+        
+        self.log_dir="/var/log/system_monitor"
+        os.makedirs(self.log_dir, exist_ok=True)
+        
         self.port = websocket_port
         self.clients = set()
         self.logger = self._setup_logger()
@@ -50,7 +54,7 @@ class SystemMonitor:
             try:
                 proc_info = proc.info
                 proc_info['cpu_percent'] = proc.cpu_percent()
-                proc_info['memory_percent'] = proc.memory_percent()
+                proc_info['memory_percent'] = round(proc.memory_percent(),3)
                 if (proc_info['cpu_percent'] > 0.1) or (proc_info['memory_percent'] > 1.0):
                     processes.append(proc_info)
                     
@@ -66,11 +70,24 @@ class SystemMonitor:
     
     
     def test_monitor(self):
-        
+        last_save = 0
         while True:
-            metrics = self.get_metrics()
-            print(metrics)
-            time.sleep(3)
+            try:
+                metrics = self.get_metrics()
+                current_time = datetime.now().timestamp()
+                if current_time - last_save >= 60:
+                    date_str = datetime.now().strftime('%Y-%m-%d')
+                    json_file = os.path.join(self.log_dir, f"cpu_usage_{self.date_str}.json") 
+                    
+                    
+                    with open(json_file, 'a') as f:
+                        f.write(json.dumps(metrics) + '\n')
+                    
+                    last_save = current_time
+                time.sleep(3)
+            except Exception as e:
+                print(f"Error in test_monitor: {e}")
+                time.sleep(3)
         
     async def monitor_metrics(self):
         last_save = 0
